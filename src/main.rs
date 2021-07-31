@@ -56,16 +56,7 @@ fn main() {
         }).unwrap();
     }
 
-    loop {
-        let task = storage::get_next_task(&connection);
-        
-        if task.is_none() {
-            println!("All tasks scheduled");
-            break;
-        }
-
-        let task_id = task.unwrap();
-
+    while let Some(task_id) = storage::get_next_task(&connection) {
         println!("Scheduling task {}", task_id);
 
         let tx = tx.clone();
