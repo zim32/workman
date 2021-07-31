@@ -1,0 +1,14 @@
+[package]
+name = "workman"
+version = "0.1.0"
+edition = "2018"
+description = "Utility to process commands using pool of workers"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "3.0.0-beta.2"
+threadpool = "1.8.1"
+rusqlite = "0.25.3"
+ctrlc = "3.1.9"
+strum_macros = "0.21.1"
