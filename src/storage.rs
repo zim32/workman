@@ -2,8 +2,8 @@ use rusqlite::{Connection, OptionalExtension};
 
 use crate::ExecCommandResult;
 
-pub fn create_database(path: &str) -> Result<ConnHandle, String> {
-    let connection = Connection::open(path).map_err(|err| err.to_string())?;
+pub fn create_database(path: &str) -> anyhow::Result<ConnHandle> {
+    let connection = Connection::open(path)?;
     
     // create schema
     connection.execute(
@@ -15,7 +15,7 @@ pub fn create_database(path: &str) -> Result<ConnHandle, String> {
              stderr TEXT
          )",
         [],
-    ).map_err(|err| err.to_string()).unwrap();
+    )?;
 
     let handle = ConnHandle {
         conn: connection
@@ -59,25 +59,24 @@ pub fn get_task_command(handle: &ConnHandle, task_id: &str) -> Option<String> {
     handle.conn.query_row("SELECT command FROM tasks WHERE task_id = ?1", [task_id], |row| row.get(0)).optional().unwrap()
 }
 
-pub fn set_task_status(handle: &ConnHandle, task_id: &str, status: TaskStatus) -> Result<usize, String> {
-    handle.conn.execute("UPDATE tasks SET status = ?1 WHERE task_id = ?2 LIMIT 1", [&status.to_string(), task_id]).map_err(|err| err.to_string())
+pub fn set_task_status(handle: &ConnHandle, task_id: &str, status: TaskStatus) -> rusqlite::Result<usize> {
+    handle.conn.execute("UPDATE tasks SET status = ?1 WHERE task_id = ?2 LIMIT 1", [&status.to_string(), task_id])
 }
 
-pub fn update_task_from_result(handle: &ConnHandle, result: &ExecCommandResult) -> Result<usize, String> {
+pub fn update_task_from_result(handle: &ConnHandle, result: &ExecCommandResult) -> rusqlite::Result<usize> {
     let status = if result.exit_status.success() { TaskStatus::Completed } else { TaskStatus::Error };
 
     handle.conn.execute(
         "UPDATE tasks SET status = ?1, command = ?2, stdout = ?3, stderr = ?4 WHERE task_id = ?5 LIMIT 1", 
         [&status.to_string(), &result.command, &result.stdout, &result.stderr, &result.task_id])
-        .map_err(|err| err.to_string())
 }
 
-pub fn mark_pending_tasks_as_aborted(handle: &ConnHandle) -> Result<usize, String> {
-    handle.conn.execute("UPDATE tasks SET status = ?1 WHERE status = ?2", [&TaskStatus::Aborted.to_string(), &TaskStatus::Processing.to_string()]).map_err(|err| err.to_string())
+pub fn mark_pending_tasks_as_aborted(handle: &ConnHandle) -> rusqlite::Result<usize> {
+    handle.conn.execute("UPDATE tasks SET status = ?1 WHERE status = ?2", [&TaskStatus::Aborted.to_string(), &TaskStatus::Processing.to_string()])
 }
 
-pub fn mark_scheduled_tasks_as_new(handle: &ConnHandle) -> Result<usize, String> {
-    handle.conn.execute("UPDATE tasks SET status = ?1 WHERE status = ?2", [&TaskStatus::New.to_string(), &TaskStatus::Scheduled.to_string()]).map_err(|err| err.to_string())
+pub fn mark_scheduled_tasks_as_new(handle: &ConnHandle) -> rusqlite::Result<usize> {
+    handle.conn.execute("UPDATE tasks SET status = ?1 WHERE status = ?2", [&TaskStatus::New.to_string(), &TaskStatus::Scheduled.to_string()])
 }
 
 pub struct ConnHandle {

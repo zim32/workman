@@ -1,5 +1,6 @@
 mod storage;
 
+use anyhow::Context;
 use clap::{App, Arg};
 use storage::TaskStatus;
 use std::process::exit;
@@ -9,7 +10,7 @@ use threadpool::ThreadPool;
 use std::{process, thread};
 use std::sync::{mpsc};
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
         .version("0.1.0")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
@@ -27,13 +28,13 @@ fn main() {
     let num_of_workers: usize = matches.value_of_t("workers").unwrap();
 
     // setup database
-    let connection = storage::create_database(&db_path).unwrap();
+    let connection = storage::create_database(&db_path).context("Can not create database")?;
     
     // import tasks
-    let tasks = fs::read_to_string(tasks_list_file).expect("Can not read tasks file");
+    let tasks = fs::read_to_string(tasks_list_file).context("Can not read tasks file")?;
     let tasks: Vec<&str> = tasks.split('\n').collect();
     storage::import_tasks(&connection, tasks, &exec_command);
-    storage::mark_scheduled_tasks_as_new(&connection).unwrap();
+    storage::mark_scheduled_tasks_as_new(&connection)?;
 
     // setup thread pool
     let pool = ThreadPool::new(num_of_workers);
@@ -49,11 +50,11 @@ fn main() {
             println!("SIGINT received");
             sig_int_received.store(true, std::sync::atomic::Ordering::SeqCst);
             // mark all penging tasks as aborted
-            let connection = storage::create_database(&db_path).unwrap();
-            storage::mark_pending_tasks_as_aborted(&connection).unwrap();
+            let connection = storage::create_database(&db_path).expect("Can not create database connection");
+            storage::mark_pending_tasks_as_aborted(&connection).expect("Can not mark pending tasks as aborted");
             println!("Exit");
             exit(1);
-        }).unwrap();
+        })?;
     }
 
     while let Some(task_id) = storage::get_next_task(&connection) {
@@ -61,8 +62,8 @@ fn main() {
 
         let tx = tx.clone();
 
-        storage::set_task_status(&connection, &task_id, storage::TaskStatus::Scheduled).unwrap();
-        let command_to_execute = storage::get_task_command(&connection, &task_id).unwrap();
+        storage::set_task_status(&connection, &task_id, storage::TaskStatus::Scheduled)?;
+        let command_to_execute = storage::get_task_command(&connection, &task_id).expect("Can not get task command to execute");
 
         pool.execute( move || {
             let message = ChannelMessage::SetTaskStatus {task_id: task_id.clone(), status: TaskStatus::Processing};
@@ -79,10 +80,11 @@ fn main() {
     let sig_int_received = Arc::clone(&sig_int_received);
 
     let main_handle = thread::spawn(move || {
-        let connection = storage::create_database(&db_path).unwrap();
+        let connection = storage::create_database(&db_path).expect("Can not create database");
         
         loop {
             let message = rx_iter.next().unwrap();
+            
             match message {
                 ChannelMessage::CommandResult(result) => {
                     println!("Command result rereived {:?}", result);
@@ -99,8 +101,8 @@ fn main() {
                 ChannelMessage::NoMoreTasks => {
                     return;
                 }
-            }   
-        }
+            };   
+        };
     });
 
     // wait for all jobs to finish
@@ -110,9 +112,10 @@ fn main() {
 
     // send message to indicate there is no more jobs to process
     let message = ChannelMessage::NoMoreTasks;
-    tx.send(message).unwrap();
+    tx.send(message)?;
 
     main_handle.join().unwrap();
+    Ok(())
 }
 
 fn execute_command(command_str: &str, task_id: &str) -> ExecCommandResult {
