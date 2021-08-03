@@ -43,12 +43,15 @@ fn main() -> anyhow::Result<()> {
     let connection = storage::create_database(&db_path).context("Can not create database")?;
     
     // import tasks
-    ld.log_message = String::from("Importing task...");
-    ui.draw(&ld);
-
     let tasks = fs::read_to_string(tasks_list_file).context("Can not read tasks file")?;
     let tasks: Vec<&str> = tasks.split('\n').collect();
-    storage::import_tasks(&connection, tasks, &exec_command);
+
+    for task in tasks {
+        ld.log_message = format!("Importing tasks {}...", task);
+        ui.draw(&ld);
+        storage::import_task(&connection, task, &exec_command);
+    }
+
     storage::mark_scheduled_tasks_as_new(&connection)?;
 
     ld.tasks_stats = storage::get_stats(&connection)?;
@@ -83,7 +86,6 @@ fn main() -> anyhow::Result<()> {
 
     // sdhedule tasks
     while let Some(task_id) = storage::get_next_task(&connection) {
-        // println!("Scheduling task {}", task_id);
         ld.log_message = format!("Scheduling task {}...", task_id);
         ui.draw(&ld);
 
@@ -96,7 +98,6 @@ fn main() -> anyhow::Result<()> {
             let message = ChannelMessage::SetTaskStatus {task_id: task_id.clone(), status: TaskStatus::Processing};
             tx.send(message).unwrap();
 
-            // println!("Executing: {}", command_to_execute);
             let exec_result = execute_command(&command_to_execute, &task_id);
             let message = ChannelMessage::CommandResult(exec_result);
 

@@ -33,26 +33,21 @@ pub fn get_number_of_incomplete_tasks(handle: &ConnHandle) -> rusqlite::Result<u
     handle.conn.query_row("SELECT COUNT(task_id) FROM tasks WHERE status != ?1", [&TaskStatus::Completed.to_string()], |row| row.get(0))
 }
 
-pub fn import_tasks(handle: &ConnHandle, tasks: Vec<&str>, command_template: &str) {
-    // println!("Importing {} tasks", tasks.len());
-    
-    for task in tasks {
-        if task.is_empty() {
-            continue;
-        }
-
-        let task_status = get_task_status(handle, task);
-        let command_to_execute = command_template.replace("{{task}}", task);
-        
-        if task_status.is_some() {
-            // println!("Task {} already exists", task);
-            continue;
-        }
-
-        // insert new task
-        // println!("Inserting new task {}", task);
-        handle.conn.execute("INSERT INTO tasks (task_id, status, command) VALUES (?1, ?2, ?3)", [task, &TaskStatus::New.to_string(), &command_to_execute]).unwrap();
+pub fn import_task(handle: &ConnHandle, task: &str, command_template: &str) {
+    if task.is_empty() {
+        return;
     }
+
+    let task_status = get_task_status(handle, task);
+    let command_to_execute = command_template.replace("{{task}}", task);
+    
+    if task_status.is_some() {
+        return;
+    }
+
+    // insert new task
+    // println!("Inserting new task {}", task);
+    handle.conn.execute("INSERT INTO tasks (task_id, status, command) VALUES (?1, ?2, ?3)", [task, &TaskStatus::New.to_string(), &command_to_execute]).unwrap();
 }
 
 
