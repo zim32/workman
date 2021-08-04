@@ -18,7 +18,7 @@ use std::sync::{mpsc};
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
-        .version("0.1.0")
+        .version("0.2.0")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
         .about("Utility to process commands using pool of workers")
         .arg(Arg::new("tasks").long("tasks").short('t').takes_value(true).required(true).about("Path to tasks list file"))
