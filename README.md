@@ -40,10 +40,13 @@ exit(rand(0, 1));
 ### Execute workman
 
 ```
-workman --tasks ./tasks.txt --workers 4 --database progress.db --tries 3 --retry-delay 10 --exec 'php job.php'
+workman --tasks ./tasks.txt --workers 4 --database progress.db --tries 3 --retry-delay 10 --exec 'php job.php {{task}}'
 ```
 
 Workman will import tasks from tasks.txt file into progress.db, create 4 worker threads and begin executing out job
+
+{{tasks}} will be replaced by whatever your task is in tasks.txt file
+
 If command exit code is not 0, it will retry command after 10 seconds. After 3 failures job will fail
 
 Here is what you will see
