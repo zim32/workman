@@ -43,7 +43,7 @@ exit(rand(0, 1));
 workman --tasks ./tasks.txt --workers 4 --database progress.db --tries 3 --retry-delay 10 --exec 'php job.php {{task}}'
 ```
 
-Workman will import tasks from tasks.txt file into progress.db, create 4 worker threads and begin executing out job
+Workman will import tasks from tasks.txt file into progress.db, create 4 worker threads and begin executing our job
 
 {{tasks}} will be replaced by whatever your task is in tasks.txt file
 
