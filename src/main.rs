@@ -18,7 +18,7 @@ use std::sync::{mpsc};
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
-        .version("0.2.0")
+        .version("0.2.1")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
         .about("Utility to process commands using pool of workers")
         .arg(Arg::new("tasks").long("tasks").short('t').takes_value(true).required(true).about("Path to tasks list file"))
@@ -96,6 +96,7 @@ fn main() -> anyhow::Result<()> {
     {
         let mut processed_tasks_count = 0;
         let mut total_elapsed_time: u128 = 0;
+        let mut last_ui_refresh_time = Instant::now();
     
         loop {
             if q_was_pressed.load(Ordering::SeqCst) {
@@ -108,10 +109,6 @@ fn main() -> anyhow::Result<()> {
             }
 
             ld.log_message = String::from("Waiting for all jobs to complete... Press 'q' to quit");
-            ld.tasks_stats_struct = storage::get_stats_struct(&connection)?;
-            ld.processed_tasks_count = processed_tasks_count;
-            ld.total_elapsed_time = total_elapsed_time;
-            ui.draw(&ld);
     
             // process chanel messages
             loop {
@@ -143,6 +140,15 @@ fn main() -> anyhow::Result<()> {
                                     }
                                 } else {
                                     storage::update_task_from_result(&connection, &result).unwrap();
+                                }
+
+                                // redraw stats (and prevent to many redraws if tasks complete very fast)
+                                if last_ui_refresh_time.elapsed().as_millis() > 500 {
+                                    ld.tasks_stats_struct = storage::get_stats_struct(&connection)?;
+                                    ld.processed_tasks_count = processed_tasks_count;
+                                    ld.total_elapsed_time = total_elapsed_time;
+                                    ui.draw(&ld);
+                                    last_ui_refresh_time = Instant::now();
                                 }
                             },
                             ChannelMessage::SetTaskStatus{task_id, status} => {

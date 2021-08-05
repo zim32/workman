@@ -2,7 +2,7 @@
 name = "workman"
 license = "MIT"
 authors = ["zim32 <yurij.uvarov@gmail.com"]
-version = "0.2.0"
+version = "0.2.1"
 categories = ["command-line-utilities"]
 edition = "2018"
 description = "Command line utility to process commands using pool of workers"
