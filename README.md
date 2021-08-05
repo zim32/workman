@@ -1,5 +1,7 @@
 # Workman
 
+## Description
+
 Workman is a command line utility to process commands using pool of workers
 
 Workman maintains local SQLite database and:
@@ -11,6 +13,22 @@ Workman maintains local SQLite database and:
 * Show min, max and avg command execution time
 
 To undertand what workman is doing, here is simle usage example:
+
+## Installation
+
+Install cargo if needed
+
+```
+curl https://sh.rustup.rs -sSf | sh
+```
+
+Install workman
+
+```
+cargo install --git https://github.com/zim32/workman.git --locked
+```
+
+## Usage
 
 ### Create tasks.txt file, which contains tasks (each task in new line)
 

@@ -107,7 +107,7 @@ fn main() -> anyhow::Result<()> {
                 exit(3);
             }
 
-            ld.log_message = String::from("Waiting for all jobs to complete... Prease 'q' to quit");
+            ld.log_message = String::from("Waiting for all jobs to complete... Press 'q' to quit");
             ld.tasks_stats_struct = storage::get_stats_struct(&connection)?;
             ld.processed_tasks_count = processed_tasks_count;
             ld.total_elapsed_time = total_elapsed_time;

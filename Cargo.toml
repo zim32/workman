@@ -1,10 +1,18 @@
 [package]
 name = "workman"
+license = "MIT"
+authors = ["zim32 <yurij.uvarov@gmail.com"]
 version = "0.2.0"
+categories = ["command-line-utilities"]
 edition = "2018"
 description = "Command line utility to process commands using pool of workers"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package.metadata.deb]
+maintainer = "zim32 <yurij.uvarov@gmail.com"
+section = "utils"
+priority = "optional"
 
 [dependencies]
 clap = "3.0.0-beta.2"
