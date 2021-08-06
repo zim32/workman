@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use rusqlite::{Connection, OptionalExtension};
 use strum_macros::{EnumString, Display as StrumDisplay};
-
+use serde::{Serialize};
 use crate::ExecCommandResult;
 
 pub fn create_database(path: &str) -> anyhow::Result<ConnHandle> {
@@ -152,7 +152,7 @@ pub enum TaskStatus {
     Aborted
 }
 
-#[derive(Default)]
+#[derive(Default, Debug, Serialize)]
 pub struct TaskStatsResult {
     pub new: u64,
     pub scheduled: u64,
