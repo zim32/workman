@@ -6,8 +6,11 @@ version = "0.3.0"
 categories = ["command-line-utilities"]
 edition = "2018"
 description = "Command line utility to process commands using pool of workers"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+repository = "https://github.com/zim32/workman"
+homepage = "https://github.com/zim32/workman"
+documentation = "https://github.com/zim32/workman"
+readme = "README.md"
+keywords = ["pool", "worker"]
 
 [package.metadata.deb]
 maintainer = "zim32 <yurij.uvarov@gmail.com"
