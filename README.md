@@ -49,9 +49,7 @@ We will create job.php file with this content:
 <?php
 
 sleep(rand(1, 5));
-
 echo $argv[1];
-
 exit(rand(0, 1));
 ```
 
@@ -73,3 +71,35 @@ Here is what you will see
 
 
 You can open progress.db file with any SQLite client to show additional information (stdout, stderr etc) and you can even edit it manually
+
+## Commands reference
+
+Currently there are two subcommands in workman: process and stats
+
+### Process
+
+This command start processing tasks and show terminal UI
+
+Usage: 
+
+```
+workman process --tasks 'tasks.txt' --workers 8 --database tasks.db --exec 'sleep1; echo {{task}}'
+```
+
+### Stats
+
+This command just dumps tasks stats to stdout in JSON format and exits
+
+Usage:
+
+```
+workman stats -d tasks.db
+```
+
+Output:
+
+```
+{"new":0,"scheduled":0,"rescheduled":0,"processing":0,"completed":28,"error":0,"aborted":0,"total":28}
+```
+
+You can view all commands and arguments using: *workman -h* or *workman --help*
