@@ -18,7 +18,7 @@ use std::sync::{mpsc};
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
-        .version("0.3.0")
+        .version("0.3.1")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
         .about("Utility to process commands using pool of workers")
         .subcommand(App::new("process")
@@ -190,20 +190,17 @@ fn main() -> anyhow::Result<()> {
         ui.draw(&ld);
 
         pool.join();
-    }
-
-    // stats subcommand
-    if let Some(matches) = matches.subcommand_matches("stats") {
+    } else if let Some(matches) = matches.subcommand_matches("stats") {
         let db_path = matches.value_of("db").unwrap().to_owned();
         let connection = storage::create_database(&db_path).context("Can not create database")?;
 
         let stats = storage::get_stats_struct(&connection)?;
-        let serialized = serde_json::to_string(&stats).unwrap();
+        let serialized = serde_json::to_string_pretty(&stats).unwrap();
         print!("{}", serialized);
         exit(0);
+    } else {
+        print!("Please specify command to run");
     }
-
-    print!("Please specify command to run");
 
     Ok(())
 }
