@@ -76,7 +76,7 @@ pub fn get_task_reshedule_count(handle: &ConnHandle, task_id: &str) -> Option<u3
     handle.conn.query_row("SELECT reshedule_count FROM tasks WHERE task_id = ?1", [task_id], |row| row.get(0)).optional().unwrap()
 }
 
-pub fn set_task_status(handle: &ConnHandle, task_id: &str, status: TaskStatus) -> rusqlite::Result<usize> {
+pub fn set_task_status(handle: &ConnHandle, task_id: &str, status: &TaskStatus) -> rusqlite::Result<usize> {
     handle.conn.execute("UPDATE tasks SET status = ?1 WHERE task_id = ?2 LIMIT 1", [&status.to_string(), task_id])
 }
 

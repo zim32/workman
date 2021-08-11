@@ -8,6 +8,7 @@ use terminal::{LayoutData, TerminalUi};
 use std::cmp::{max, min};
 use std::io::Read;
 use std::process::exit;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::time::{Duration, Instant};
@@ -18,7 +19,7 @@ use std::sync::{mpsc};
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
-        .version("0.3.1")
+        .version("0.4.0")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
         .about("Utility to process commands using pool of workers")
         .subcommand(App::new("process")
@@ -32,6 +33,11 @@ fn main() -> anyhow::Result<()> {
         ).subcommand(App::new("stats")
             .about("Show stats in JSON format")
             .arg(Arg::new("db").long("database").short('d').takes_value(true).required(true).default_value("tasks.db").about("Path to database file"))
+        ).subcommand(App::new("set-status")
+            .about("Update tasks status for tasks specified in tasks file")
+            .arg(Arg::new("tasks").long("tasks").short('t').takes_value(true).required(true).about("Path to tasks list file"))
+            .arg(Arg::new("db").long("database").short('d').takes_value(true).required(true).default_value("tasks.db").about("Path to database file"))
+            .arg(Arg::new("status").takes_value(true).required(true).index(1).about("New status"))
         )
         .get_matches();
 
@@ -161,7 +167,7 @@ fn main() -> anyhow::Result<()> {
                                     }
                                 },
                                 ChannelMessage::SetTaskStatus{task_id, status} => {
-                                    storage::set_task_status(&connection, &task_id, status).unwrap();
+                                    storage::set_task_status(&connection, &task_id, &status).unwrap();
                                 }
                             };   
                         }
@@ -198,6 +204,36 @@ fn main() -> anyhow::Result<()> {
         let serialized = serde_json::to_string_pretty(&stats).unwrap();
         print!("{}", serialized);
         exit(0);
+    } else if let Some(matches) = matches.subcommand_matches("set-status") {
+        let db_path = matches.value_of("db").unwrap().to_owned();
+        let new_status = matches.value_of("status").unwrap().to_owned();
+        let tasks_list_file = matches.value_of("tasks").unwrap();
+        
+        // open database
+        let connection = storage::create_database(&db_path).context("Can not create database")?;
+
+        let status = TaskStatus::from_str(&new_status).unwrap_or_else(|_| panic!("Wrong status: {}", new_status));
+
+        // setup ui
+        let mut ui = terminal::TerminalUi::new()?;
+        let mut ld: LayoutData = Default::default();
+        ui.clear();
+
+        // load tasks list
+        let tasks = fs::read_to_string(tasks_list_file).context("Can not read tasks file")?;
+        let tasks: Vec<&str> = tasks.split('\n').collect();
+
+        for task in tasks {
+            ld.log_message = format!("Updating task {}...", task);
+            ld.tasks_stats_struct = storage::get_stats_struct(&connection)?;
+            ui.draw(&ld);
+
+            storage::set_task_status(&connection, task, &status)?;
+        }    
+        
+        ld.log_message = "All tasks updated".to_owned();
+        ld.tasks_stats_struct = storage::get_stats_struct(&connection)?;
+        ui.draw(&ld);
     } else {
         print!("Please specify command to run");
     }
@@ -220,7 +256,7 @@ fn schedule_tasks(
 
         let tx = tx.clone();
 
-        storage::set_task_status(&connection, &task_id, storage::TaskStatus::Scheduled)?;
+        storage::set_task_status(&connection, &task_id, &storage::TaskStatus::Scheduled)?;
         let command_to_execute = storage::get_task_command(&connection, &task_id).expect("Can not get task command to execute");
 
         pool.execute( move || {
