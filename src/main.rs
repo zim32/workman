@@ -7,6 +7,7 @@ use storage::{TaskStatus, ConnHandle};
 use terminal::{LayoutData, TerminalUi};
 use std::cmp::{max, min};
 use std::io::Read;
+use std::path::Path;
 use std::process::exit;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -16,10 +17,11 @@ use std::{fs, sync::Arc};
 use threadpool::ThreadPool;
 use std::{process, thread, u128};
 use std::sync::{mpsc}; 
+use csv::{ReaderBuilder, StringRecord};
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
-        .version("0.4.0")
+        .version("0.5.0")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
         .about("Utility to process commands using pool of workers")
         .subcommand(App::new("process")
@@ -30,6 +32,8 @@ fn main() -> anyhow::Result<()> {
             .arg(Arg::new("exec").long("exec").short('e').takes_value(true).required(true).about("Command to execute"))
             .arg(Arg::new("tries").long("tries").takes_value(true).required(false).default_value("0").about("How many times to retry command if it fails"))
             .arg(Arg::new("delay").long("retry-delay").takes_value(true).required(false).default_value("1").about("Number of seconds task will be in rescheduled state before picked up again"))            
+            .arg(Arg::new("delimeter").long("delimeter").takes_value(true).required(false).default_value(",").about("CSV delimeter"))            
+            .arg(Arg::new("has-header").long("has-header").takes_value(false).required(false).about("Set this flag if first row of CSV file contains headers"))            
         ).subcommand(App::new("stats")
             .about("Show stats in JSON format")
             .arg(Arg::new("db").long("database").short('d').takes_value(true).required(true).default_value("tasks.db").about("Path to database file"))
@@ -51,6 +55,9 @@ fn main() -> anyhow::Result<()> {
         let num_of_workers: usize = matches.value_of_t("workers").unwrap();
         let retries: u32 = matches.value_of_t("tries").unwrap();
         let retry_delay: u32 = matches.value_of_t("delay").unwrap();
+        let delimeter: &str = matches.value_of("delimeter").unwrap();
+        let delimeter = delimeter.as_bytes()[0];
+        let has_header = matches.is_present("has-header");
 
         // setup ui
         let mut ui = terminal::TerminalUi::new()?;
@@ -64,13 +71,17 @@ fn main() -> anyhow::Result<()> {
         let connection = storage::create_database(&db_path).context("Can not create database")?;
 
         // import tasks
-        let tasks = fs::read_to_string(tasks_list_file).context("Can not read tasks file")?;
-        let tasks: Vec<&str> = tasks.split('\n').collect();
+        let tasks = load_tasks_from_file(tasks_list_file, delimeter, has_header)?;
 
-        for task in tasks {
+        for row in tasks {
+            if row.len() == 0 {
+                return Err(anyhow::anyhow!("At least one column required in a row"));
+            }
+
+            let task = &row[0];
             ld.log_message = format!("Importing tasks {}...", task);
             ui.draw(&ld);
-            storage::import_task(&connection, task, &exec_command);
+            storage::import_task(&connection, &row, &exec_command);
         }
 
         storage::mark_scheduled_tasks_as_new(&connection)?;
@@ -274,7 +285,7 @@ fn schedule_tasks(
 }
 
 fn execute_command(command_str: &str, task_id: &str) -> ExecCommandResult {
-        let mut command = process::Command::new("sh");
+    let mut command = process::Command::new("sh");
     command.arg("-c");
     command.arg(command_str);
     
@@ -289,6 +300,20 @@ fn execute_command(command_str: &str, task_id: &str) -> ExecCommandResult {
         stderr: String::from_utf8(result.stderr).unwrap(),
         elapsed_time_ms: now.elapsed().as_millis()
     }
+}
+
+fn load_tasks_from_file(path: impl AsRef<Path>, delimeter: u8, has_header: bool) -> anyhow::Result<Vec<StringRecord>> {
+    let reader = ReaderBuilder::default().delimiter(delimeter).has_headers(has_header).from_path(path)?;
+    let iter = reader.into_records();
+
+    let mut result: Vec<StringRecord> = vec![];
+
+    for record in iter {
+        let data = record?;
+        result.push(data);
+    }
+
+    Ok(result)
 }
 
 pub struct ExecCommandResult {

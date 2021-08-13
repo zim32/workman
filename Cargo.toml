@@ -2,7 +2,7 @@
 name = "workman"
 license = "MIT"
 authors = ["zim32 <yurij.uvarov@gmail.com"]
-version = "0.4.0"
+version = "0.5.0"
 categories = ["command-line-utilities"]
 edition = "2018"
 description = "Command line utility to process commands using pool of workers"
@@ -28,3 +28,4 @@ tui = "0.15"
 termion = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+csv = "1.1"

@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use csv::StringRecord;
 use rusqlite::{Connection, OptionalExtension};
 use strum_macros::{EnumString, Display as StrumDisplay};
 use serde::{Serialize};
@@ -46,16 +47,25 @@ pub fn get_number_of_incomplete_tasks(handle: &ConnHandle) -> rusqlite::Result<u
     )
 }
 
-pub fn import_task(handle: &ConnHandle, task: &str, command_template: &str) {
+pub fn import_task(handle: &ConnHandle, record: &StringRecord, command_template: &str) {
+    let task = &record[0];
+
     if task.is_empty() {
         return;
     }
 
     let task_status = get_task_status(handle, task);
-    let command_to_execute = command_template.replace("{{task}}", task);
-    
+
     if task_status.is_some() {
         return;
+    }
+
+    // for backward compatibility
+    let mut command_to_execute = command_template.replace("{{task}}", task);
+    
+    // interpolate all columns by column index
+    for i in 0..record.len() {
+        command_to_execute = command_to_execute.replace(&format!("{{{{{}}}}}", i), &record[i]);
     }
 
     // insert new task
