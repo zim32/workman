@@ -64,7 +64,7 @@ Workman will import tasks from tasks.csv file into progress.db, create 4 worker 
 There are some interpolation rules, applied to exec command:
 
 * {{N}} - where N is some number, will be replaced by column with index **N** is csv file (starting from 0)
-* {{tasks}} will be replaced by column with index 0 for compatibility reasons
+* {{task}} will be replaced by column with index 0 for compatibility reasons
 
 If command exit code is not 0, it will retry command after 10 seconds. After 3 failures job will fail
 
