@@ -73,13 +73,13 @@ fn main() -> anyhow::Result<()> {
         // import tasks
         let tasks = load_tasks_from_file(tasks_list_file, delimeter, has_header)?;
 
-        for row in tasks {
+        for (record_idx, row) in tasks.iter().enumerate() {
             if row.len() == 0 {
                 return Err(anyhow::anyhow!("At least one column required in a row"));
             }
 
             let task = &row[0];
-            ld.log_message = format!("Importing tasks {}...", task);
+            ld.log_message = format!("Importing task {}: {}...", record_idx + 1, task);
             ui.draw(&ld);
             storage::import_task(&connection, &row, &exec_command);
         }
