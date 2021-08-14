@@ -30,7 +30,7 @@ cargo install --git https://github.com/zim32/workman.git --locked
 
 ## Usage
 
-### Create tasks.txt file, which contains tasks (each task in new line)
+### Create tasks.csv file, which contains tasks (each task in new line)
 
 ```
 1
@@ -56,12 +56,15 @@ exit(rand(0, 1));
 ### Execute workman
 
 ```
-workman process --tasks ./tasks.txt --workers 4 --database progress.db --tries 3 --retry-delay 10 --exec 'php job.php {{task}}'
+workman process --tasks ./tasks.csv --workers 4 --database progress.db --tries 3 --retry-delay 10 --exec 'php job.php {{task}}'
 ```
 
-Workman will import tasks from tasks.txt file into progress.db, create 4 worker threads and begin executing our job
+Workman will import tasks from tasks.csv file into progress.db, create 4 worker threads and begin executing our job
 
-{{tasks}} will be replaced by whatever your task is in tasks.txt file
+There are some interpolation rules, applied to exec command:
+
+* {{N}} - where N is some number, will be replaced by column with index **N** is csv file (starting from 0)
+* {{tasks}} will be replaced by column with index 0 for compatibility reasons
 
 If command exit code is not 0, it will retry command after 10 seconds. After 3 failures job will fail
 
@@ -83,7 +86,7 @@ This command start processing tasks and show terminal UI
 Usage: 
 
 ```
-workman process --tasks 'tasks.txt' --workers 8 --database tasks.db --exec 'sleep1; echo {{task}}'
+workman process --tasks 'tasks.csv' --workers 8 --database tasks.db --exec 'sleep1; echo {{task}}'
 ```
 
 ### Stats
