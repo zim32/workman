@@ -41,8 +41,8 @@ pub fn get_next_task(handle: &ConnHandle, max_tries: u32) -> Option<String> {
 
 pub fn get_number_of_incomplete_tasks(handle: &ConnHandle) -> rusqlite::Result<usize> {
     handle.conn.query_row(
-        "SELECT COUNT(task_id) FROM tasks WHERE status != ?1 AND status != ?2",
-        [&TaskStatus::Completed.to_string(), &TaskStatus::Error.to_string()],
+        "SELECT COUNT(task_id) FROM tasks WHERE status != ?1 AND status != ?2 AND status != ?3",
+        [&TaskStatus::Completed.to_string(), &TaskStatus::Error.to_string(), &TaskStatus::Aborted.to_string()],
         |row| row.get(0)
     )
 }

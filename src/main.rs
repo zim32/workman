@@ -21,7 +21,7 @@ use csv::{ReaderBuilder, StringRecord};
 
 fn main() -> anyhow::Result<()> {
     let matches = App::new("workman")
-        .version("0.5.1")
+        .version("0.5.2")
         .author("Author: zim32 [yurij.uvarov@gmail.com]")
         .about("Utility to process commands using pool of workers")
         .subcommand(App::new("process")
